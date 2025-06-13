@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Feedback Portal</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom right, #141e30, #243b55);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    h1, h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    form {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      padding: 25px;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+      position: relative;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0 20px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: #ccc;
+    }
+
+    textarea {
+      resize: none;
+    }
+
+    #charCount {
+      text-align: right;
+      font-size: 12px;
+      color: #ccc;
+      margin-top: -15px;
+      margin-bottom: 15px;
+    }
+
+    button {
+      background: #00c6ff;
+      color: #000;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+      transition: 0.3s ease;
+    }
+
+    button:hover {
+      background: #0072ff;
+      color: white;
+    }
+
+    #records {
+      margin-top: 30px;
+      width: 100%;
+      max-width: 700px;
+    }
+
+    .record {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px 20px;
+      border-left: 5px solid #00c6ff;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      transition: 0.3s;
+    }
+
+    .record:hover {
+      transform: scale(1.01);
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #00c6ff;
+      color: #000;
+      padding: 12px 18px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      animation: fadeInOut 3s forwards;
+    }
+
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translateY(20px); }
+      10% { opacity: 1; transform: translateY(0); }
+      90% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(20px); }
+    }
+
+    #scrollTopBtn {
+      display: none;
+      position: fixed;
+      bottom: 25px;
+      left: 25px;
+      background-color: #00c6ff;
+      border: none;
+      color: black;
+      padding: 10px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+
+    #loader {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 18px;
+      color: #aaa;
+    }
+  </style>
+  <script>
+    const API_URL = "http://127.0.0.1:5000";
+
+    async function submitFeedback() {
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
+      const feedback = document.getElementById("feedback").value;
+
+      if (name && email && feedback) {
+        await fetch(`${API_URL}/create`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, feedback })
+        });
+
+        showToast("✅ Feedback submitted!");
+        loadFeedbacks();
+        document.getElementById("form").reset();
+        document.getElementById("charCount").innerText = "";
+      } else {
+        alert("Please fill all fields!");
+      }
+    }
+
+    async function loadFeedbacks() {
+      const container = document.getElementById("records");
+      container.innerHTML = '<div id="loader">Loading feedbacks...</div>';
+      try {
+        const response = await fetch(`${API_URL}/get_records`);
+        const records = await response.json();
+        container.innerHTML = '';
+
+        if (records.length === 0) {
+          container.innerHTML = '<p style="text-align:center; color:#aaa;">No feedback yet. Be the first! 🌟</p>';
+        }
+
+        records.reverse().forEach(record => {
+          const div = document.createElement("div");
+          div.className = "record";
+          div.innerHTML = `<strong>👤 ${record.name}</strong> (<em>${record.email}</em>)<br>💬 ${record.feedback}`;
+          container.appendChild(div);
+        });
+      } catch {
+        container.innerHTML = '<p style="color: red;">Failed to load feedbacks.</p>';
+      }
+    }
+
+    function showToast(message) {
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.innerText = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function updateCharCount() {
+      const text = document.getElementById("feedback").value;
+      const counter = document.getElementById("charCount");
+      counter.innerText = `${text.length}/200 characters`;
+    }
+
+    window.onscroll = () => {
+      document.getElementById("scrollTopBtn").style.display = window.scrollY > 200 ? "block" : "none";
+    };
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    window.onload = loadFeedbacks;
+  </script>
+</head>
+<body>
+  <h1>🌐 Share Your Thoughts</h1>
+  <form id="form" onsubmit="event.preventDefault(); submitFeedback();">
+    <input type="text" id="name" placeholder="👤 Your Name" required />
+    <input type="email" id="email" placeholder="📧 Your Email" required />
+    <textarea id="feedback" placeholder="💬 Your Feedback (max 200 chars)" maxlength="200" oninput="updateCharCount()" required></textarea>
+    <div id="charCount"></div>
+    <button type="submit">🚀 Submit Feedback</button>
+  </form>
+
+  <h2>📝 Recent Feedback</h2>
+  <div id="records"></div>
+
+  <button id="scrollTopBtn" onclick="scrollToTop()">⬆</button>
+</body>
+</html>
