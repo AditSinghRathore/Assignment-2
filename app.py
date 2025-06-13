@@ -4,7 +4,7 @@ from cloudant.client import Cloudant
 from cloudant.error import CloudantException
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS to allow frontend communication
+CORS(app)
 
 # Cloudant credentials
 apikey = "QR_qjOTj8Jfsn2Y02cShVI7EL9cJ9tpuAJnp1npZi8Fj"
@@ -19,7 +19,6 @@ try:
 except CloudantException:
     db = client.create_database(db_name)
 
-# Serve static HTML directly from current folder
 @app.route('/')
 def index():
     return send_file("index.html")
